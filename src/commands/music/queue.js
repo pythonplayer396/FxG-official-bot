@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const CustomEmbedBuilder = require('../../utils/embedBuilder');
+const MusicEmbedBuilder = require('../../utils/musicEmbedBuilder');
 const config = require('../../config');
 
 module.exports = {
@@ -33,44 +34,15 @@ module.exports = {
         if (page > totalPages) page = totalPages;
         if (page < 1) page = 1;
 
-        const start = (page - 1) * pageSize;
-        const end = start + pageSize;
-        const pageTracks = tracks.slice(start, end);
-
-        // Calculate total duration
-        const totalDuration = tracks.reduce((acc, track) => acc + (track.durationMS || 0), 0);
-        const hours = Math.floor(totalDuration / 3600000);
-        const minutes = Math.floor((totalDuration % 3600000) / 60000);
-        
-        // Get loop mode
-        const loopModes = ['Off', 'Track', 'Queue', 'Autoplay'];
-        const loopMode = loopModes[queue.repeatMode] || 'Off';
-
-        const embed = new EmbedBuilder()
-            .setColor('#9B59B6')
-            .setTitle('🎵 Music Queue')
-            .setDescription(
-                `**Now Playing:**\n` +
-                `[${currentTrack.title}](${currentTrack.url})\n` +
-                `${currentTrack.author} • ${currentTrack.duration}\n` +
-                `Requested by: ${currentTrack.requestedBy.tag}\n\n` +
-                `**Queue Info:**\n` +
-                `🔊 Volume: ${queue.node.volume}% | 🔁 Loop: ${loopMode}\n` +
-                `📊 Songs in queue: ${tracks.length} | ⏱️ Total duration: ${hours > 0 ? `${hours}h ` : ''}${minutes}m`
-            )
-            .setThumbnail(currentTrack.thumbnail)
-            .setTimestamp();
-
-        if (tracks.length === 0) {
-            embed.addFields({ name: 'Up Next', value: 'No songs in queue' });
-        } else {
-            const queueList = pageTracks.map((track, i) => {
-                const position = start + i + 1;
-                return `**${position}.** [${track.title}](${track.url})\n${track.author} • ${track.duration}`;
-            }).join('\n\n');
-
-            embed.addFields({ name: `Up Next (Page ${page}/${totalPages})`, value: queueList || 'No songs on this page' });
-        }
+        // Create advanced detailed queue embed
+        const embed = MusicEmbedBuilder.queueDisplay(
+            queue,
+            currentTrack,
+            tracks,
+            page,
+            totalPages,
+            interaction.guild
+        );
 
         // Add pagination buttons if needed
         if (totalPages > 1) {

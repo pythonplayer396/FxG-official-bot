@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const CustomEmbedBuilder = require('../../utils/embedBuilder');
+const MusicEmbedBuilder = require('../../utils/musicEmbedBuilder');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -68,25 +69,9 @@ module.exports = {
                 eqValues.map((gain, band) => ({ band, gain }))
             );
 
-            const presetNames = {
-                flat: 'Flat (Default)',
-                bass: 'Bass Boost 🔊',
-                treble: 'Treble Boost 🎵',
-                pop: 'Pop 🎤',
-                rock: 'Rock 🎸',
-                classical: 'Classical 🎻',
-                jazz: 'Jazz 🎺',
-                electronic: 'Electronic 🎹',
-                fullbass: 'Full Bass 💥',
-                soft: 'Soft 🌙'
-            };
-
-            await interaction.editReply({
-                embeds: [CustomEmbedBuilder.music(
-                    'Equalizer Applied',
-                    `🎚️ Applied **${presetNames[preset]}** equalizer preset!`
-                )]
-            });
+            // Create detailed equalizer embed
+            const embed = MusicEmbedBuilder.equalizerApplied(preset, queue);
+            await interaction.editReply({ embeds: [embed] });
         } catch (error) {
             console.error('[EQUALIZER] Error:', error);
             await interaction.editReply({

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { QueryType } = require('discord-player');
 const CustomEmbedBuilder = require('../../utils/embedBuilder');
+const MusicEmbedBuilder = require('../../utils/musicEmbedBuilder');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -72,19 +73,23 @@ module.exports = {
                 queue.node.insert(searchResult.tracks[0], 0);
             }
 
-            if (!queue.isPlaying()) await queue.node.play();
+            const wasPlaying = queue.isPlaying();
+            if (!wasPlaying) await queue.node.play();
 
-            const embed = searchResult.playlist
-                ? CustomEmbedBuilder.music(
-                    'Playlist Added to Front',
-                    `**${searchResult.playlist.title}**\n${searchResult.tracks.length} songs will play next`
-                )
-                : CustomEmbedBuilder.music(
-                    'Song Added to Front',
-                    `**${searchResult.tracks[0].title}**\n${searchResult.tracks[0].author}\n\nThis song will play next!`
+            // Create detailed embed
+            if (searchResult.playlist) {
+                const embed = MusicEmbedBuilder.playlistAdded(
+                    searchResult.playlist,
+                    searchResult.tracks,
+                    queue,
+                    interaction.user
                 );
-
-            await interaction.editReply({ embeds: [embed] });
+                await interaction.editReply({ embeds: [embed] });
+            } else {
+                const track = searchResult.tracks[0];
+                const embed = MusicEmbedBuilder.songAdded(track, queue, 1);
+                await interaction.editReply({ embeds: [embed] });
+            }
 
         } catch (error) {
             console.error('[PLAYNEXT] Error:', error);

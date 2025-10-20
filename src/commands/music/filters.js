@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const CustomEmbedBuilder = require('../../utils/embedBuilder');
+const MusicEmbedBuilder = require('../../utils/musicEmbedBuilder');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -51,9 +52,8 @@ module.exports = {
         try {
             if (filter === 'none') {
                 await queue.filters.ffmpeg.setFilters(false);
-                return interaction.editReply({
-                    embeds: [CustomEmbedBuilder.music('Filters Cleared', '🎚️ All audio filters have been removed.')]
-                });
+                const embed = MusicEmbedBuilder.filterApplied('none', false, queue);
+                return interaction.editReply({ embeds: [embed] });
             }
 
             // Apply the selected filter
@@ -75,30 +75,9 @@ module.exports = {
             
             if (filterName) {
                 await queue.filters.ffmpeg.toggle([filterName]);
-                
-                const filterEmojis = {
-                    'bassboost': '🔊',
-                    'nightcore': '⚡',
-                    'vaporwave': '🌊',
-                    '8d': '🎧',
-                    'karaoke': '🎤',
-                    'tremolo': '〰️',
-                    'vibrato': '📳',
-                    'reverse': '⏪',
-                    'treble': '🎵',
-                    'normalizer': '📊',
-                    'surrounding': '🔄'
-                };
-
-                const emoji = filterEmojis[filter] || '🎚️';
                 const isEnabled = queue.filters.ffmpeg.filters.includes(filterName);
-
-                await interaction.editReply({
-                    embeds: [CustomEmbedBuilder.music(
-                        'Filter Applied', 
-                        `${emoji} **${filter.charAt(0).toUpperCase() + filter.slice(1)}** filter ${isEnabled ? 'enabled' : 'disabled'}!`
-                    )]
-                });
+                const embed = MusicEmbedBuilder.filterApplied(filter, isEnabled, queue);
+                await interaction.editReply({ embeds: [embed] });
             }
         } catch (error) {
             console.error('[FILTERS] Error:', error);

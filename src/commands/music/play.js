@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { QueryType } = require('discord-player');
 const CustomEmbedBuilder = require('../../utils/embedBuilder');
+const MusicEmbedBuilder = require('../../utils/musicEmbedBuilder');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -91,37 +92,25 @@ module.exports = {
             // Play if not already playing
             if (!queue.isPlaying()) await queue.node.play();
 
-            // Create enhanced embed
+            // Create enhanced embed with detailed information
             if (searchResult.playlist) {
-                const embed = new EmbedBuilder()
-                    .setColor('#9B59B6')
-                    .setTitle('📋 Playlist Added to Queue')
-                    .setDescription(`**${searchResult.playlist.title}**`)
-                    .addFields(
-                        { name: '🎵 Songs Added', value: `${searchResult.tracks.length}`, inline: true },
-                        { name: '👤 Requested By', value: interaction.user.tag, inline: true },
-                        { name: '📊 Queue Position', value: wasPlaying ? `${queue.tracks.size - searchResult.tracks.length + 1}-${queue.tracks.size}` : 'Now Playing', inline: true }
-                    )
-                    .setThumbnail(searchResult.playlist.thumbnail || searchResult.tracks[0].thumbnail)
-                    .setTimestamp();
-
+                const embed = MusicEmbedBuilder.playlistAdded(
+                    searchResult.playlist,
+                    searchResult.tracks,
+                    queue,
+                    interaction.user
+                );
                 await interaction.editReply({ embeds: [embed] });
             } else {
                 const track = searchResult.tracks[0];
-                const embed = new EmbedBuilder()
-                    .setColor('#9B59B6')
-                    .setTitle(wasPlaying ? '🎵 Song Added to Queue' : '🎵 Now Playing')
-                    .setDescription(`**[${track.title}](${track.url})**\n${track.author}`)
-                    .addFields(
-                        { name: '⏱️ Duration', value: track.duration, inline: true },
-                        { name: '👤 Requested By', value: interaction.user.tag, inline: true },
-                        { name: '📊 Position', value: wasPlaying ? `#${queue.tracks.size}` : 'Now Playing', inline: true }
-                    )
-                    .setThumbnail(track.thumbnail)
-                    .setFooter({ text: `Source: ${track.source || 'Unknown'}` })
-                    .setTimestamp();
-
-                await interaction.editReply({ embeds: [embed] });
+                if (wasPlaying) {
+                    const embed = MusicEmbedBuilder.songAdded(track, queue);
+                    await interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = MusicEmbedBuilder.nowPlaying(track, queue, interaction);
+                    const buttons = MusicEmbedBuilder.createControlButtons(queue);
+                    await interaction.editReply({ embeds: [embed], components: [buttons] });
+                }
             }
 
         } catch (error) {

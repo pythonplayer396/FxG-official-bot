@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const { QueryType } = require('discord-player');
 const CustomEmbedBuilder = require('../../utils/embedBuilder');
+const MusicEmbedBuilder = require('../../utils/musicEmbedBuilder');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -49,19 +50,8 @@ module.exports = {
 
             const tracks = searchResult.tracks.slice(0, resultCount);
 
-            // Create embed with search results
-            const embed = new EmbedBuilder()
-                .setColor('#9B59B6')
-                .setTitle('🔍 Search Results')
-                .setDescription(`Found ${searchResult.tracks.length} results for **${query}**\n\nSelect a song from the menu below:`)
-                .setTimestamp();
-
-            // Add track info to embed
-            const trackList = tracks.map((track, i) => 
-                `**${i + 1}.** ${track.title}\n${track.author} • ${track.duration}`
-            ).join('\n\n');
-
-            embed.addFields({ name: 'Top Results', value: trackList });
+            // Create advanced detailed search embed
+            const embed = MusicEmbedBuilder.searchResults(query, tracks, interaction.user);
 
             // Create select menu
             const options = tracks.map((track, i) => 
@@ -120,16 +110,19 @@ module.exports = {
                         queue.addTrack(selectedTrack);
 
                         // Play if not already playing
-                        if (!queue.isPlaying()) await queue.node.play();
+                        const wasPlaying = queue.isPlaying();
+                        if (!wasPlaying) await queue.node.play();
 
-                        const successEmbed = CustomEmbedBuilder.music(
-                            'Song Added',
-                            `**${selectedTrack.title}**\n${selectedTrack.author}\n\nDuration: ${selectedTrack.duration}`
-                        );
+                        // Create detailed success embed
+                        const successEmbed = wasPlaying 
+                            ? MusicEmbedBuilder.songAdded(selectedTrack, queue)
+                            : MusicEmbedBuilder.nowPlaying(selectedTrack, queue, interaction);
+
+                        const components = wasPlaying ? [] : [MusicEmbedBuilder.createControlButtons(queue)];
 
                         await interaction.editReply({ 
                             embeds: [successEmbed], 
-                            components: [] 
+                            components: components
                         });
 
                         collector.stop();
